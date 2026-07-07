@@ -4,6 +4,19 @@ An Ableton Live extension for building **transitions** — effect sections (filt
 sweeps, reverb tails, delay throws, …) at the end of an arrangement section — as
 their own generated tracks, without touching your original clips.
 
+## Screenshots
+
+*(from [MOCKUP.html](MOCKUP.html), the UI reference used during development — not a live Ableton session)*
+
+| | |
+|---|---|
+| ![Edit transition](screenshots/01-edit-transition.png) | ![Effect chain editor](screenshots/02-effect-chain.png) |
+| Setting up a transition for a time selection | A captured effect chain, ready to fine-tune |
+| ![Silence option](screenshots/03-silence-option.png) | ![Library](screenshots/04-library.png) |
+| Silence duration as a segmented control | Saved transitions in the Library |
+| ![Matrix view](screenshots/05-matrix.png) | |
+| Assigning multiple transitions to tracks at a glance | |
+
 ## What it does
 
 Draw a time selection over the end of a section in the Arrangement, right-click
