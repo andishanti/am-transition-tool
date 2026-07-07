@@ -1,0 +1,1189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AM Transition Tool</title>
+<style>
+  :root{
+    --bg:#fbfbfa;--panel:#fff;--line:#e6e6e3;--line2:#d2d2cd;
+    --tx:#1d1d1f;--tx2:#69696b;--tx3:#9b9b9d;
+    --acc:#2f6fed;--accbg:#eaf1fe;--acctx:#1a4fb3;--ok:#1d9e75;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--tx);font-family:-apple-system,Segoe UI,Roboto,sans-serif;font-size:13px;}
+  .wrap{display:flex;flex-direction:column;height:100vh;}
+  .hd{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--line);}
+  .nm{font-size:15px;font-weight:600;} .stp{color:var(--tx2);}
+  .x{cursor:pointer;color:var(--tx2);font-size:18px;line-height:1;}
+  .bdy{flex:1;overflow:auto;padding:16px;}
+  .ft{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;border-top:1px solid var(--line);}
+  label.f{display:block;color:var(--tx2);margin:0 0 5px;}
+  input[type=text],input[type=number],select{height:30px;border:1px solid var(--line2);border-radius:6px;padding:0 8px;font:inherit;background:#fff;color:var(--tx);}
+  select{cursor:pointer;}
+  button{height:30px;border:1px solid var(--line2);border-radius:6px;background:#fff;color:var(--tx);padding:0 12px;font:inherit;cursor:pointer;}
+  button:hover{background:#f3f3f1;}
+  button.primary{background:var(--acc);color:#fff;border-color:var(--acc);}
+  button.primary:hover{filter:brightness(.95);}
+  button:disabled{opacity:.4;cursor:not-allowed;}
+  .ban{display:flex;gap:8px;background:var(--accbg);color:var(--acctx);border-radius:6px;padding:9px 11px;margin:0 0 14px;line-height:1.4;}
+  .seg{display:inline-flex;border:1px solid var(--line2);border-radius:6px;overflow:hidden;}
+  .seg .opt{padding:6px 14px;font-weight:500;color:var(--tx2);cursor:pointer;user-select:none;background:#fff;}
+  .seg .opt.on{background:var(--acc);color:#fff;}
+  .seg .opt.dis{opacity:.4;cursor:not-allowed;}
+  .note{color:var(--tx3);}
+  .chk{display:flex;align-items:center;gap:8px;color:var(--tx2);cursor:pointer;}
+  .listbox{border:1px solid var(--line);border-radius:6px;max-height:230px;overflow:auto;margin:0 0 8px;}
+  .exrow{display:flex;align-items:center;gap:9px;padding:7px 10px;border-bottom:1px solid var(--line);}
+  .exrow:last-child{border-bottom:0;} .exrow.empty{color:var(--tx3);}
+  .exrow.grp{background:#f4f4f2;font-weight:600;} .exrow.child{padding-left:24px;}
+  .exrow.assigned{color:var(--tx3);}
+  .grpic{color:var(--tx3);flex:none;}
+  .tsw{width:12px;height:12px;border-radius:3px;flex:none;border:1px solid var(--line2);background:#bbb;}
+  .cdot{width:12px;height:12px;border-radius:50%;flex:none;border:1px solid rgba(0,0,0,.18);background:#bbb;}
+  .colorrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .swatchbtn{width:20px;height:20px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px var(--line2);cursor:pointer;padding:0;}
+  .swatchbtn.sel{box-shadow:0 0 0 2px var(--acc);}
+  .tpill{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:2px 8px 2px 5px;border-radius:20px;background:var(--accbg);color:var(--acctx);border:1px solid #c5d9fc;}
+  .clipinfo{display:flex;gap:12px;align-items:center;background:#f4f4f2;border-radius:6px;padding:9px 12px;margin:0 0 14px;flex-wrap:wrap;}
+  .clipinfo-sep{color:var(--line2);}
+  .stepsRow{display:flex;align-items:center;gap:10px;margin:8px 0 16px;}
+  .fxlist{display:flex;flex-direction:column;gap:8px;margin:0 0 8px;}
+  .fxcard{border:1px solid var(--line);border-radius:8px;background:#fff;transition:opacity .12s;}
+  .fxcard.dragging{opacity:.4;} .fxcard.disabled{opacity:.45;}
+  /* Drop-position indicator for drag-and-drop reorder (effect tiles + library list) — a thin
+     accent line on whichever edge of the hovered row the dragged item would land on. */
+  .drop-before{box-shadow:inset 0 2px 0 0 var(--acc);}
+  .drop-after{box-shadow:inset 0 -2px 0 0 var(--acc);}
+  .fxhd{display:flex;align-items:center;gap:8px;padding:9px 11px;}
+  .fxgrip{flex:none;cursor:grab;color:var(--tx3);font-size:15px;line-height:1;user-select:none;}
+  .fxgrip:hover{color:var(--tx);} .fxgrip:active{cursor:grabbing;}
+  .fxname{font-weight:600;flex:1;}
+  .fxrm{cursor:pointer;color:var(--tx3);font-size:17px;line-height:1;padding:0 2px;}
+  .fxrm:hover{color:#c0392b;}
+  .switch{position:relative;width:30px;height:18px;border-radius:10px;background:#d8d8d2;flex:none;cursor:pointer;transition:background .12s;}
+  .switch::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:left .12s;box-shadow:0 1px 2px rgba(0,0,0,.25);}
+  .switch.on{background:var(--acc);} .switch.on::after{left:14px;}
+  .fxbody{padding:0 11px 12px 11px;display:flex;flex-direction:column;gap:10px;}
+  .pgroup{display:flex;flex-direction:column;gap:3px;}
+  .prow{display:flex;justify-content:space-between;align-items:baseline;}
+  .prow .val{color:var(--tx2);font-variant-numeric:tabular-nums;}
+  /* Higher-contrast slider (custom track/thumb styling). */
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:18px;background:transparent;cursor:pointer;}
+  input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:3px;background:#cfcfca;border:1px solid #b6b6b0;}
+  input[type=range]::-moz-range-track{height:6px;border-radius:3px;background:#cfcfca;border:1px solid #b6b6b0;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:16px;height:16px;margin-top:-6px;border-radius:50%;background:var(--acc);border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.35);}
+  input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--acc);border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.35);}
+  input[type=range]:hover::-webkit-slider-thumb{filter:brightness(.92);}
+  .range2{display:flex;align-items:center;gap:8px;}
+  .range2 input[type=range]{flex:1;}
+  .range2 .val{width:78px;text-align:right;color:var(--tx2);font-variant-numeric:tabular-nums;flex:none;}
+  .fxtypeseg .opt{padding:4px 10px;}
+  .addeffrow{display:flex;gap:8px;align-items:center;padding:6px 0 2px;}
+  .fxchev{flex:none;cursor:pointer;color:var(--tx3);font-size:13px;width:14px;text-align:center;user-select:none;}
+  .fxchev:hover{color:var(--tx);}
+  hr.div{border:none;border-top:1px solid var(--line);margin:12px 0;}
+  .roundlist{display:flex;flex-direction:column;gap:6px;margin:4px 0 12px;}
+  .roundrow{display:flex;align-items:center;gap:9px;padding:8px 11px;border-radius:6px;border:1px solid var(--line);background:#fff;flex-wrap:wrap;}
+  .roundrow .tt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .roundrow .tracks{color:var(--tx2);font-size:12px;}
+  table.matrix{border-collapse:collapse;width:100%;font-size:12.5px;}
+  table.matrix th,table.matrix td{padding:6px 8px;border-bottom:1px solid var(--line);}
+  table.matrix th{font-weight:600;white-space:nowrap;}
+  table.matrix td{text-align:center;}
+  table.matrix td.nm{text-align:left;display:flex;align-items:center;gap:6px;font-size:inherit;font-weight:400;}
+  .rateswp{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  .rateswp select{flex:1;min-width:80px;}
+  .rateswp .arw{color:var(--tx3);}
+  /* Preset/library save popup — same style as am-drum-fill-generator's "Save Preset" modal. */
+  .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);align-items:center;justify-content:center;z-index:100;}
+  .overlay-box{background:#fff;border-radius:10px;width:260px;box-shadow:0 8px 32px rgba(0,0,0,.18);}
+  .overlay-hd{padding:14px 16px 0;font-size:14px;font-weight:600;}
+  .overlay-bdy{padding:12px 16px;}
+  .overlay-bdy input[type=text]{width:100%;}
+  .overlay-err{color:#c0392b;font-size:11px;margin-top:6px;min-height:14px;}
+  .overlay-ft{display:flex;justify-content:flex-end;gap:8px;padding:0 16px 14px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hd"><span class="nm">AM Transition Tool</span><span class="stp" id="ind">Library</span><span class="x" id="xtop">&times;</span></div>
+  <div class="bdy" id="bdy"></div>
+  <div class="ft">
+    <button id="cancel">Cancel</button>
+    <div style="display:flex;gap:8px;" id="ftRight"></div>
+  </div>
+</div>
+<div class="overlay" id="save-modal">
+  <div class="overlay-box">
+    <div class="overlay-hd" id="save-modal-title">Save Preset</div>
+    <div class="overlay-bdy">
+      <input type="text" id="save-modal-input" placeholder="Name" autocomplete="off">
+      <div class="overlay-err" id="save-modal-error"></div>
+    </div>
+    <div class="overlay-ft"><button id="save-modal-cancel">Cancel</button><button class="primary" id="save-modal-save">Save</button></div>
+  </div>
+</div>
+<script>
+(function(){
+  // ── Host-Integration ──────────────────────────────────────────────────────
+  // The host (extension.ts) replaces the placeholder below with a JSON blob:
+  // { clipBars, selectedTrackIds, tracks, userPresets, libPresets, draft, capturedChain }.
+  // The placeholder may only appear ONCE in the code (String.replace only replaces the first).
+  // Fallback (browser preview / _serve.cjs): demo data, so the GUI runs without Live.
+  let DATA;
+  try { DATA = __TRANSITION_DATA__; }
+  catch(e){
+    DATA = {
+      clipBars: 7, selectedTrackIds: [1, 3],
+      tracks: [
+        {id:0,name:'Drums',isGroup:true,group:null,hasContent:false,color:null},
+        {id:1,name:'Kick', isGroup:false,group:0,  hasContent:true, color:'#e0533d'},
+        {id:2,name:'Hats', isGroup:false,group:0,  hasContent:true, color:'#e0a33d'},
+        {id:3,name:'Bass', isGroup:false,group:null,hasContent:true, color:'#3b82f6'},
+        {id:4,name:'Lead', isGroup:false,group:null,hasContent:true, color:'#d9a441'},
+        {id:5,name:'Pad',  isGroup:false,group:null,hasContent:true, color:'#7c3aed'},
+        {id:6,name:'FX',   isGroup:false,group:null,hasContent:false,color:'#94a3b8'},
+      ],
+      userPresets:null, libPresets:null, draft:null,
+      // Demo of a captured effect chain (preview only) — shows "Insert captured chain" +
+      // the hint about a skipped, unrecognized device.
+      capturedChain: { chain: [
+        { type:'filter', params:{on:true,typeSel:'lp',cutoff:600,resonance:25,slope:'24',dryWet:100} },
+        { type:'reverb', params:{on:true,decay:3000,size:60,dryWet:40,snapshot:{'Diffusion':0.62}} },
+        { type:'eq8', params:{on:true,scale:1.4,scaleTo:1.4,snapshot:{'1 Gain A':-3}} },
+      ], skipped: ['Wavetable'] },
+    };
+  }
+  // Result sent to the host (exactly once, on close). Fallback: console (preview).
+  function sendResult(obj){
+    const m = { method:'close_and_send', params:[ JSON.stringify(obj) ] };
+    if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.live) window.webkit.messageHandlers.live.postMessage(m);
+    else if (window.chrome && window.chrome.webview) window.chrome.webview.postMessage(m);
+    else console.log('[am-transition-tool] RESULT', obj);
+  }
+
+  // ── Constants ─────────────────────────────────────────────────────────────
+  const TRACKS = DATA.tracks;
+  const ANCHOR_CLIP_BARS = DATA.clipBars;
+  const SELECTED_TRACK_IDS = Array.isArray(DATA.selectedTrackIds) ? DATA.selectedTrackIds : [];
+  // Effect chain capture (HANDOVER.md §9) — replaces the manual effect selection.
+  // Set session-wide by the track context-menu command "Capture effect chain".
+  const CAPTURED_CHAIN = (DATA.capturedChain && Array.isArray(DATA.capturedChain.chain)) ? DATA.capturedChain : null;
+  // Effect length = length of the time selection: no input field of its own anymore
+  // (see below, the selection determines the range + which tracks are immediately
+  // assigned to the new transition).
+  const FX_LEN_MIN = 0.5;    // minimum effect length (if silence claims part of the clip)
+  // Silence duration: fixed tile options (segmented control, like Filter Slope) instead of a slider.
+  // 0 = no silence subtracted (default) — replaces the earlier separate silence on/off toggle.
+  const SILENCE_OPTIONS = [0, 0.25, 0.5, 1, 2, 4];
+  // Effective effect length of a cfg: the full clip, or the clip minus the silence duration (0 = none).
+  function effLenFor(hasFx, cfg){
+    if(!hasFx) return 0;
+    return Math.max(FX_LEN_MIN, ANCHOR_CLIP_BARS-(cfg.silenceBars||0));
+  }
+  // Step-sweep rules (unchanged, just generalized onto a free length field instead of a fixed list):
+  // <1 bar no sweep · 1–<2 bars max. 2 steps · 2–<8 bars max. 2/4 · from 8 bars up 2/4/8.
+  function stepOptionsForLength(bars){
+    if(bars < 1) return [];
+    if(bars < 2) return [2];
+    if(bars < 8) return [2,4];
+    return [2,4,8];
+  }
+  // Downgrades cfg.silenceBars/sweepSteps/sweepOn to the largest value that still fits the
+  // current selection length, instead of hard-resetting to Off/disabled. Returns a list of
+  // human-readable change descriptions (empty if nothing needed adjusting) — called silently
+  // on every render, and surfaced as a one-time notice when triggered by loading a preset or
+  // a whole library (see applyPreset/switchLibrary).
+  function clampCfgToSelection(cfg){
+    const changes=[];
+    const hasFx=cfg.order.some(id=>cfg.effects[id]&&cfg.effects[id].on);
+    const stepOpts=stepOptionsForLength(effLenFor(hasFx,cfg));
+    if(cfg.sweepOn && stepOpts.length===0){
+      changes.push('Sweep disabled (selection too short)');
+      cfg.sweepOn=false;
+    } else if(cfg.sweepOn && !stepOpts.includes(cfg.sweepSteps)){
+      const fit=stepOpts.filter(s=>s<=cfg.sweepSteps).slice(-1)[0] ?? stepOpts[0];
+      changes.push('Sweep steps reduced from '+cfg.sweepSteps+'× to '+fit+'×');
+      cfg.sweepSteps=fit;
+    }
+    const silMax=hasFx?Math.max(0,ANCHOR_CLIP_BARS-FX_LEN_MIN):ANCHOR_CLIP_BARS;
+    if((cfg.silenceBars||0)>silMax){
+      const fit=SILENCE_OPTIONS.filter(v=>v<=silMax).slice(-1)[0] ?? 0;
+      changes.push('Silence reduced from '+cfg.silenceBars+' to '+(fit===0?'Off':fit+' bar(s)'));
+      cfg.silenceBars=fit;
+    }
+    return changes;
+  }
+  const DELAY_RATES = ['1/16','2/16','3/16','4/16'];
+  const ECHO_RATES  = ['1/64','1/32','1/16','1/8','1/4','1/2','1'];
+  const LONG_RATES  = ['1/64','1/48','1/32','1/24','1/16','1/12','1/8','1/6','3/16','1/4','5/16','1/3','3/8','1/2','3/4','1','1.5','2','3','4'];
+  const CHORUS_TIMES = ['Auto','7ms','10ms','20ms','35ms','50ms'];
+  const SATURATOR_TYPES = ['Analog Clip','Soft Sine','Bass Shaper','Medium Curve','Hard Curve','Sinoid Fold','Digital Clip','Waveshaper'];
+  // Default palette for transition colors (freely selectable via the color picker).
+  const TRANSITION_COLORS = ['#e0533d','#e0a33d','#1d9e75','#3b82f6','#7c3aed','#d6499a','#2bb1b1','#8a7d2b'];
+  let colorCounter = 0;
+  function nextColor(){ return TRANSITION_COLORS[(colorCounter++) % TRANSITION_COLORS.length]; }
+  function cdot(color){ const s=document.createElement('span'); s.className='cdot'; if(color) s.style.background=color; return s; }
+
+  // Effect catalog (alphabetical)
+  const CATALOG = [
+    {key:'autopan',       label:'Auto Pan'},
+    {key:'chorus',        label:'Chorus-Ensemble'},
+    {key:'delay',         label:'Delay'},
+    {key:'echo',          label:'Echo'},
+    {key:'eq8',           label:'EQ Eight'},
+    {key:'erosion',       label:'Erosion'},
+    {key:'filter',        label:'Filter'},
+    {key:'phaserflanger', label:'Phaser-Flanger'},
+    {key:'reverb',        label:'Reverb'},
+    {key:'saturator',     label:'Saturator'},
+    {key:'vocoder',       label:'Vocoder'},
+  ];
+
+  const byId={}; TRACKS.forEach(t=>byId[t.id]=t);
+  function ancestors(t){const a=[];let p=t.group;while(p!=null){a.push(p);p=byId[p]?byId[p].group:null;}return a;}
+  function descLeaves(gid){return TRACKS.filter(t=>!t.isGroup&&ancestors(t).indexOf(gid)>=0);}
+  function swatch(color){const s=document.createElement('span');s.className='tsw';if(color)s.style.background=color;return s;}
+
+  // Log scales
+  const HZ_MIN=20,HZ_MAX=20000,LOG_RES=1000;
+  function hzToPos(hz){return Math.round(LOG_RES*Math.log(hz/HZ_MIN)/Math.log(HZ_MAX/HZ_MIN));}
+  function posToHz(pos){return Math.round(HZ_MIN*Math.pow(HZ_MAX/HZ_MIN,pos/LOG_RES));}
+  function fmtHz(hz){return hz>=1000?(hz/1000).toFixed(hz%1000===0?0:1)+' kHz':hz+' Hz';}
+
+  const PF_MIN=70,PF_MAX=18500;
+  function pfToPos(hz){return Math.round(LOG_RES*Math.log(hz/PF_MIN)/Math.log(PF_MAX/PF_MIN));}
+  function posToPf(pos){return Math.round(PF_MIN*Math.pow(PF_MAX/PF_MIN,pos/LOG_RES));}
+
+  const SZ_MIN=0.22,SZ_MAX=500;
+  function szToPos(v){return Math.round(LOG_RES*Math.log(v/SZ_MIN)/Math.log(SZ_MAX/SZ_MIN));}
+  function posToSz(p){return +(SZ_MIN*Math.pow(SZ_MAX/SZ_MIN,p/LOG_RES)).toFixed(2);}
+  function fmtSz(v){return v<1?v.toFixed(2):v<10?v.toFixed(1):Math.round(v);}
+
+  function fmtDecay(ms){return ms<1000?ms+' ms':(ms/1000).toFixed(1)+' s';}
+
+  // ── Effect instances ──────────────────────────────────────────────────────
+  let _ic=0;
+  function newId(type){return type+'_'+(_ic++);}
+  function typeOf(id){return id.replace(/_\d+$/,'');}
+
+  function freshParams(type){
+    const d={
+      filter:       {typeSel:'lp',cutoff:800,cutoffTo:1600,resonance:20,resonanceTo:40,slope:'12',dryWet:100,dryWetTo:100},
+      delay:        {sync:'3/16',feedback:40,pingpong:false,dryWet:35,dryWetTo:60},
+      reverb:       {decay:2500,decayTo:5000,size:50,dryWet:50,dryWetTo:75},
+      autopan:      {typeSel:'panning',rate:'1/4',rateTo:'1/2',amount:50,amountTo:80,shape:50},
+      chorus:       {typeSel:'chorus',rate:1.0,amount:50,amountTo:80,feedback:20,time:'Auto',width:100,widthTo:150,dryWet:50,dryWetTo:75},
+      echo:         {mode:'stereo',sync:'1/4',feedback:50,dryWet:50,dryWetTo:75},
+      erosion:      {noiseBlend:50,noiseBlendTo:80,stereo:0,stereoTo:50,width:1.0,widthTo:2.0,freq:1000,freqTo:5000,amount:50,amountTo:80},
+      eq8:          {snapshot:null,scale:1,scaleTo:1},
+      phaserflanger:{typeSel:'phaser',rate:'1/4',amount:50,amountTo:80,notches:8,center:1000,spread:50,spreadTo:100,timeFlanger:5,timeDoubler:50,dryWet:50,dryWetTo:75},
+      saturator:    {snapshot:null,typeSel:'Analog Clip',amount:50,amountTo:80,dryWet:100,dryWetTo:100},
+      vocoder:      {snapshot:null,dryWet:50,dryWetTo:75},
+    };
+    return {on:true,...(d[type]||{})};
+  }
+
+  // ── freshCfg ──────────────────────────────────────────────────────────────
+  function freshCfg(){
+    return {
+      sweepOn:false,sweepSteps:2,applyToOriginal:false,
+      order:[],effects:{},silenceBars:0,
+      color:nextColor(),
+      title:'',activePreset:'b:eigene',
+    };
+  }
+
+  // ── Preset data (type 2: single transition) ──────────────────────────────
+  const BUILTIN_PRESETS = {
+    eigene:null,
+  };
+  const PRESET_LABELS={eigene:'Custom'};
+  let userPresets = Array.isArray(DATA.userPresets) ? DATA.userPresets
+    : [{name:'My Riser',cfg:{order:['filter_0'],effects:{'filter_0':{on:true,typeSel:'hp',cutoff:30,cutoffTo:800,resonance:15,resonanceTo:15}}}}];
+
+  function applyPreset(src,title){
+    cfg.order=JSON.parse(JSON.stringify(src.order));
+    cfg.effects=JSON.parse(JSON.stringify(src.effects));
+    if(src.silenceBars!==undefined) cfg.silenceBars=src.silenceBars;
+    if(src.sweepOn!==undefined) cfg.sweepOn=src.sweepOn;
+    if(src.sweepSteps!==undefined) cfg.sweepSteps=src.sweepSteps;
+    if(src.color) cfg.color=src.color;
+    if(title) cfg.title=title;
+    // Downgrade (not reset) anything that no longer fits the current selection, and — unlike
+    // the silent per-render clamp in renderB() — tell the user about it right here, since this
+    // is the one moment the values could actually surprise them (loaded from elsewhere).
+    const changes=clampCfgToSelection(cfg);
+    if(changes.length) alert('Preset adjusted to fit the current selection:\n'+changes.join('\n'));
+  }
+
+  // ── Wizard state ──────────────────────────────────────────────────────────
+  // "Default" library (activeLibPreset==='eigene'): its own, session-persistent state,
+  // independent of which preset is currently displayed. defs/matrixAssign are simply
+  // references to these two while Default is active — so edits automatically flow through.
+  let defaultDefs=[], defaultMatrixAssign={};
+  let defs=defaultDefs, matrixAssign=defaultMatrixAssign, fxLibEditIndex=null;
+  let assignOneIndex=null, assignOneReturnPhase='LIST';
+  let phase='LIST', cfg=null;
+  let libPresets = Array.isArray(DATA.libPresets) ? DATA.libPresets : [];
+  let activeLibPreset='eigene';
+  let saveModalTarget=null;   // 'preset' | 'library' | null — which flow the save popup is for
+  let collapsed=new Set();      // collapsed effect instances (instanceId)
+  // A transition being edited is only ever written into defs/matrixAssign when the user
+  // explicitly clicks "Save to library" — until then (whether started via "+ New transition"
+  // or auto-created from a time selection) it lives only in `cfg` + `pendingAssignedIds`,
+  // with fxLibEditIndex staying null. This replaces the old immediate-push + discard-on-back
+  // (splice) approach: since nothing is added to defs prematurely, "Back" never has anything
+  // to remove. "Apply" (direct, one-shot) reads from pendingAssignedIds/matrixAssign the same
+  // way regardless of whether the transition has been saved to the library yet.
+  let pendingAssignedIds=new Set();
+  // True once THIS editing session's tracks are a real, committed matrixAssign entry —
+  // set by an explicit "Assign" click, or already true when opening an existing saved
+  // entry via "Edit". Stays false across "Save to library" alone (2026-07-06: that button
+  // no longer navigates away and must not silently commit a track assignment either) so
+  // the editor keeps showing pendingAssignedIds without ever exposing this entry to the
+  // "taken" double-assignment guard until the user explicitly commits via "Assign".
+  let pendingIsCommitted=false;
+
+  function cloneMA(ma){const c={};Object.keys(ma).forEach(k=>c[k]=new Set(ma[k]));return c;}
+
+  // Remap matrixAssign's index-keyed entries after moving a defs[] entry from `fi` to `ti`
+  // (post-removal index, i.e. where it ends up after the splice) — same shifting rule the
+  // delete handler already used, generalized to a move in either direction. Mutates `ma` in
+  // place (not a reassignment) so an existing alias — e.g. defaultMatrixAssign while "Default"
+  // is active — keeps pointing at the same, now-updated object.
+  function remapAssignForMove(ma,fi,ti){
+    const moved=Object.keys(ma).map(k=>{
+      const idx=+k;
+      let ni;
+      if(idx===fi) ni=ti;
+      else if(fi<ti && idx>fi && idx<=ti) ni=idx-1;
+      else if(fi>ti && idx>=ti && idx<fi) ni=idx+1;
+      else ni=idx;
+      return [ni,ma[k]];
+    });
+    Object.keys(ma).forEach(k=>delete ma[k]);
+    moved.forEach(([idx,set])=>{ma[idx]=set;});
+  }
+
+  // Tracks currently assigned to the transition being edited — from matrixAssign once
+  // committed, otherwise from the local pending set (see pendingIsCommitted above).
+  function currentAssignedIds(){
+    return pendingIsCommitted ? (matrixAssign[fxLibEditIndex]||new Set()) : pendingAssignedIds;
+  }
+
+  // Validates every entry of a defs[] array against the current selection in one pass (same
+  // downgrade logic as applyPreset), showing one consolidated notice if anything changed.
+  // Shared by switchLibrary() and restoreSession() — both load a whole library's worth of
+  // transitions at once, unlike the single-transition renderB()/applyPreset() path.
+  function validateDefsAgainstSelection(defsArr){
+    const allChanges=[];
+    defsArr.forEach(d=>{
+      const changes=clampCfgToSelection(d);
+      if(changes.length) allChanges.push((d.title||'Untitled')+': '+changes.join(', '));
+    });
+    if(allChanges.length) alert('Adjusted to fit the current selection:\n'+allChanges.join('\n'));
+  }
+
+  // Switch library: "Default" is its own, session-persistent library
+  // (defaultDefs/defaultMatrixAssign); defs/matrixAssign point to it by reference while
+  // Default is active, so every change automatically lands there. Presets, by contrast,
+  // are freshly cloned from libPresets on every access (a read-only template).
+  function switchLibrary(key){
+    if(activeLibPreset===key) return;
+    if(activeLibPreset==='eigene'){ defaultDefs=defs; defaultMatrixAssign=matrixAssign; }
+    activeLibPreset=key;
+    if(key==='eigene'){ defs=defaultDefs; matrixAssign=defaultMatrixAssign; }
+    else { const lp=libPresets.find(p=>p.name===key); defs=lp?JSON.parse(JSON.stringify(lp.defs)):[]; matrixAssign={}; }
+    validateDefsAgainstSelection(defs);
+    render();
+  }
+
+  // Demo library preset
+  // Demo library preset only in the fallback (browser preview without host data).
+  if(!Array.isArray(DATA.libPresets)) libPresets.push({name:'Pop Drop Set',defs:[
+    Object.assign(freshCfg(),{title:'Filter In',order:['filter_0'],effects:{'filter_0':{on:true,typeSel:'lp',cutoff:300,cutoffTo:1200,resonance:20,resonanceTo:20}},sweepOn:true,sweepSteps:2}),
+    Object.assign(freshCfg(),{title:'Dub Fade',order:['delay_0','reverb_0'],effects:{'delay_0':{on:true,sync:'2/16',feedback:45,dryWet:35,dryWetTo:60,pingpong:false},'reverb_0':{on:true,decay:2500,decayTo:5000,size:50,dryWet:50,dryWetTo:75}}}),
+  ]});
+
+  // ── Helper functions ──────────────────────────────────────────────────────
+  function defLabel(d,i){return(d.title&&d.title.trim())?d.title.trim():('Transition '+(i+1));}
+  // `full`=true (used for tooltips) skips truncation; the default (visible row text) caps
+  // long effect chains at 3 names + "+N more effect(s)" so many-effect transitions don't
+  // blow up the library list / matrix column width (declutter fix).
+  function summarizeCfg(c,full){
+    const names=c.order.map(id=>{const cat=CATALOG.find(x=>x.key===typeOf(id));return cat?cat.label:id;});
+    const active=names.filter((_,i)=>(c.effects[c.order[i]]||{}).on);
+    const hasFx=active.length>0;
+    const shown=(!full && active.length>3)?active.slice(0,3).concat('+'+(active.length-3)+' more effect'+(active.length-3===1?'':'s')):active.slice();
+    if(c.silenceBars>0)shown.push('Silence '+c.silenceBars+' bar(s)');
+    const len=hasFx?effLenFor(true,c):(c.silenceBars||0);
+    return(shown.length?shown.join(' → '):'no effect')+', '+len+' bar(s)'+(c.sweepOn?' · Sweep '+c.sweepSteps+'×':'');
+  }
+
+  // ── Render-Helpers ────────────────────────────────────────────────────────
+  function pLabel(text){const d=document.createElement('div');d.className='prow';const s=document.createElement('span');s.textContent=text;d.appendChild(s);return d;}
+
+  function rangeSingle(label,value,min,max,step,fmt,onInput){
+    const g=document.createElement('div');g.className='pgroup';
+    const r=document.createElement('div');r.className='prow';
+    const l=document.createElement('span');l.textContent=label;
+    const v=document.createElement('span');v.className='val';v.textContent=fmt(value);
+    r.appendChild(l);r.appendChild(v);
+    const inp=document.createElement('input');inp.type='range';inp.min=min;inp.max=max;inp.step=step;inp.value=value;
+    inp.oninput=()=>{v.textContent=fmt(+inp.value);onInput(+inp.value);};
+    g.appendChild(r);g.appendChild(inp);return g;
+  }
+  function rangeSweep(label,fromV,toV,min,max,step,fmt,onFrom,onTo){
+    const g=document.createElement('div');g.className='pgroup';
+    g.appendChild(pLabel(label+' (Sweep from → to)'));
+    [[fromV,'from ',onFrom],[toV,'to ',onTo]].forEach(([val,pfx,cb])=>{
+      const row=document.createElement('div');row.className='range2';
+      const v=document.createElement('span');v.className='val';v.textContent=pfx+fmt(val);
+      const i=document.createElement('input');i.type='range';i.min=min;i.max=max;i.step=step;i.value=val;
+      i.oninput=()=>{v.textContent=pfx+fmt(+i.value);cb(+i.value);};
+      row.appendChild(i);row.appendChild(v);g.appendChild(row);
+    });
+    return g;
+  }
+  function rangeSingleLog(label,hzV,toPos,fromPos,fmtFn,onInput){
+    const g=document.createElement('div');g.className='pgroup';
+    const r=document.createElement('div');r.className='prow';
+    const l=document.createElement('span');l.textContent=label;
+    const v=document.createElement('span');v.className='val';v.textContent=fmtFn(hzV);
+    r.appendChild(l);r.appendChild(v);
+    const inp=document.createElement('input');inp.type='range';inp.min=0;inp.max=LOG_RES;inp.value=toPos(hzV);
+    inp.oninput=()=>{const hz=fromPos(+inp.value);v.textContent=fmtFn(hz);onInput(hz);};
+    g.appendChild(r);g.appendChild(inp);return g;
+  }
+  function rangeSweepLog(label,fromHz,toHz,toPos,fromPos,fmtFn,onFrom,onTo){
+    const g=document.createElement('div');g.className='pgroup';
+    g.appendChild(pLabel(label+' (Sweep from → to)'));
+    [[fromHz,'from ',onFrom],[toHz,'to ',onTo]].forEach(([val,pfx,cb])=>{
+      const row=document.createElement('div');row.className='range2';
+      const v=document.createElement('span');v.className='val';v.textContent=pfx+fmtFn(val);
+      const i=document.createElement('input');i.type='range';i.min=0;i.max=LOG_RES;i.value=toPos(val);
+      i.oninput=()=>{const hz=fromPos(+i.value);v.textContent=pfx+fmtFn(hz);cb(hz);};
+      row.appendChild(i);row.appendChild(v);g.appendChild(row);
+    });
+    return g;
+  }
+  function typeSeg(options,current,onPick){
+    const seg=document.createElement('div');seg.className='seg fxtypeseg';
+    options.forEach(([val,lbl])=>{
+      const o=document.createElement('span');o.className='opt'+(val===current?' on':'');
+      o.textContent=lbl;o.onclick=()=>onPick(val);seg.appendChild(o);
+    });
+    return seg;
+  }
+  function mkSelect(options,current,onChange){
+    const sel=document.createElement('select');
+    options.forEach(r=>{const o=document.createElement('option');o.value=r;o.textContent=r;if(r===current)o.selected=true;sel.appendChild(o);});
+    sel.onchange=()=>onChange(sel.value);return sel;
+  }
+  function rateGroup(label,rates,c,sweepOn,onFrom,onTo){
+    const g=document.createElement('div');g.className='pgroup';
+    g.appendChild(pLabel(label+(sweepOn?' (Sweep from → to)':'')));
+    if(sweepOn){
+      const row=document.createElement('div');row.className='rateswp';
+      const s1=mkSelect(rates,c.rate,v=>c.rate=v);
+      const arr=document.createElement('span');arr.className='arw';arr.textContent='→';
+      const s2=mkSelect(rates,c.rateTo||c.rate,v=>c.rateTo=v);
+      row.appendChild(s1);row.appendChild(arr);row.appendChild(s2);g.appendChild(row);
+    } else {
+      g.appendChild(mkSelect(rates,c.rate,v=>c.rate=v));
+    }
+    return g;
+  }
+
+  // ── Effect bodies ─────────────────────────────────────────────────────────
+  // Dry/Wet sits last in every effect; from→to when sweeping.
+  function dryWetCtrl(c,sw){
+    return sw?rangeSweep('Dry/Wet',c.dryWet,c.dryWetTo,0,100,1,v=>v+' %',v=>c.dryWet=v,v=>c.dryWetTo=v)
+            :rangeSingle('Dry/Wet',c.dryWet,0,100,1,v=>v+' %',v=>c.dryWet=v);
+  }
+  function renderFilterBody(c,sw){
+    const w=el('div','',{cssText:'display:flex;flex-direction:column;gap:10px'});
+    w.appendChild(typeGroup('Type',[['lp','Low Pass'],['hp','High Pass'],['bp','Band Pass']],c.typeSel,v=>{c.typeSel=v;renderB();}));
+    w.appendChild(sw?rangeSweepLog('Cutoff',c.cutoff,c.cutoffTo,hzToPos,posToHz,fmtHz,v=>c.cutoff=v,v=>c.cutoffTo=v):rangeSingleLog('Cutoff',c.cutoff,hzToPos,posToHz,fmtHz,v=>c.cutoff=v));
+    w.appendChild(sw?rangeSweep('Resonance',c.resonance,c.resonanceTo,0,100,1,v=>v+' %',v=>c.resonance=v,v=>c.resonanceTo=v):rangeSingle('Resonance',c.resonance,0,100,1,v=>v+' %',v=>c.resonance=v));
+    w.appendChild(typeGroup('Filter Slope',[['12','12 dB'],['24','24 dB']],c.slope||'12',v=>{c.slope=v;renderB();}));
+    w.appendChild(dryWetCtrl(c,sw));
+    return w;
+  }
+  function renderDelayBody(c,sw){
+    const w=el('div','',{cssText:'display:flex;flex-direction:column;gap:10px'});
+    const rg=document.createElement('div');rg.className='pgroup';rg.appendChild(pLabel('Rate (Sync)'));rg.appendChild(mkSelect(DELAY_RATES,c.sync,v=>c.sync=v));w.appendChild(rg);
+    w.appendChild(rangeSingle('Feedback',c.feedback,0,100,1,v=>v+' %',v=>c.feedback=v));
+    const ppLbl=document.createElement('label');ppLbl.className='chk';
+    const ppCb=document.createElement('input');ppCb.type='checkbox';ppCb.checked=c.pingpong;ppCb.onchange=()=>c.pingpong=ppCb.checked;
+    ppLbl.appendChild(ppCb);ppLbl.appendChild(document.createTextNode(' Ping Pong'));w.appendChild(ppLbl);
+    w.appendChild(dryWetCtrl(c,sw));
+    return w;
+  }
+  function renderReverbBody(c,sw){
+    const w=el('div','',{cssText:'display:flex;flex-direction:column;gap:10px'});
+    // Pre-Delay/Diffusion/Density/Shelfs/Chorus/Reflect/Spin/Scale come along as a raw
+    // snapshot when this instance was inserted via "Insert captured chain" (HANDOVER.md §9)
+    // — no separate base-parameter editor anymore, only Decay/Size/Dry-Wet are adjustable here.
+    w.appendChild(sw?rangeSweep('Decay',c.decay,c.decayTo,200,10000,10,fmtDecay,v=>c.decay=v,v=>c.decayTo=v):rangeSingle('Decay',c.decay,200,10000,10,fmtDecay,v=>c.decay=v));
+    w.appendChild(rangeSingleLog('Size',c.size,szToPos,posToSz,fmtSz,v=>c.size=v));
+    w.appendChild(dryWetCtrl(c,sw));
+    return w;
+  }
+  function renderAutoPanBody(c,sw){
+    const w=el('div','',{cssText:'display:flex;flex-direction:column;gap:10px'});
+    w.appendChild(typeGroup('Type',[['panning','Panning'],['tremolo','Tremolo']],c.typeSel,v=>{c.typeSel=v;renderB();}));
+    w.appendChild(rateGroup('Rate (Sync)',LONG_RATES,c,false,v=>c.rate=v,null));
+    w.appendChild(sw?rangeSweep('Amount',c.amount,c.amountTo,0,100,1,v=>v+' %',v=>c.amount=v,v=>c.amountTo=v):rangeSingle('Amount',c.amount,0,100,1,v=>v+' %',v=>c.amount=v));
+    w.appendChild(rangeSingle('Shape',c.shape,0,100,1,v=>v+' %',v=>c.shape=v));
+    // No native Dry/Wet on Auto Pan-Tremolo, and no rack Dry/Wet wrapper implemented —
+    // no control shown, nothing to apply.
+    return w;
+  }
+  function renderChorusBody(c,sw){
+    const w=el('div','',{cssText:'display:flex;flex-direction:column;gap:10px'});
+    w.appendChild(typeGroup('Type',[['chorus','Chorus'],['ensemble','Ensemble'],['vibrato','Vibrato']],c.typeSel,v=>{c.typeSel=v;renderB();}));
+    w.appendChild(rangeSingle('Rate',c.rate,0.1,15,0.01,v=>v.toFixed(2)+' Hz',v=>c.rate=v));
+    w.appendChild(sw?rangeSweep('Amount',c.amount,c.amountTo,0,100,1,v=>v+' %',v=>c.amount=v,v=>c.amountTo=v):rangeSingle('Amount',c.amount,0,100,1,v=>v+' %',v=>c.amount=v));
+    if(c.typeSel==='chorus'||c.typeSel==='ensemble') w.appendChild(rangeSingle('Feedback',c.feedback,0,100,1,v=>v+' %',v=>c.feedback=v));
+    if(c.typeSel==='chorus'){const tg=document.createElement('div');tg.className='pgroup';tg.appendChild(pLabel('Time'));tg.appendChild(mkSelect(CHORUS_TIMES,c.time,v=>c.time=v));w.appendChild(tg);}
+    w.appendChild(sw?rangeSweep('Width',c.width,c.widthTo,0,200,1,v=>v+'',v=>c.width=v,v=>c.widthTo=v):rangeSingle('Width',c.width,0,200,1,v=>v+'',v=>c.width=v));
+    w.appendChild(dryWetCtrl(c,sw));
+    return w;
+  }
+  function renderEchoBody(c,sw){
+    const w=el('div','',{cssText:'display:flex;flex-direction:column;gap:10px'});
+    w.appendChild(typeGroup('Mode',[['stereo','Stereo'],['pingpong','Ping Pong'],['midside','Mid/Side']],c.mode,v=>{c.mode=v;renderB();}));
+    const sg=document.createElement('div');sg.className='pgroup';sg.appendChild(pLabel('Rate (Sync)'));sg.appendChild(mkSelect(ECHO_RATES,c.sync,v=>c.sync=v));w.appendChild(sg);
+    w.appendChild(rangeSingle('Feedback',c.feedback,0,100,1,v=>v+' %',v=>c.feedback=v));
+    w.appendChild(dryWetCtrl(c,sw));
+    return w;
+  }
+  function renderErosionBody(c,sw){
+    const w=el('div','',{cssText:'display:flex;flex-direction:column;gap:10px'});
+    w.appendChild(sw?rangeSweep('Noise Blend',c.noiseBlend,c.noiseBlendTo,0,100,1,v=>v+' %',v=>c.noiseBlend=v,v=>c.noiseBlendTo=v):rangeSingle('Noise Blend',c.noiseBlend,0,100,1,v=>v+' %',v=>c.noiseBlend=v));
+    w.appendChild(sw?rangeSweep('Stereo',c.stereo,c.stereoTo,0,100,1,v=>v+' %',v=>c.stereo=v,v=>c.stereoTo=v):rangeSingle('Stereo',c.stereo,0,100,1,v=>v+' %',v=>c.stereo=v));
+    const widthDisabled=c.noiseBlend===0;
+    const wg=sw?rangeSweep('Width',c.width,c.widthTo,0.1,2.5,0.01,v=>v.toFixed(2),v=>c.width=v,v=>c.widthTo=v):rangeSingle('Width',c.width,0.1,2.5,0.01,v=>v.toFixed(2),v=>c.width=v);
+    if(widthDisabled){wg.style.opacity='0.4';wg.querySelectorAll('input').forEach(i=>i.disabled=true);const n=el('div','note',{fontSize:'11px'});n.textContent='Disabled when Noise Blend = 0%';wg.appendChild(n);}
+    w.appendChild(wg);
+    w.appendChild(sw?rangeSweepLog('Frequency',c.freq,c.freqTo,hzToPos,posToHz,fmtHz,v=>c.freq=v,v=>c.freqTo=v):rangeSingleLog('Frequency',c.freq,hzToPos,posToHz,fmtHz,v=>c.freq=v));
+    w.appendChild(sw?rangeSweep('Amount',c.amount,c.amountTo,0,100,1,v=>v+' %',v=>c.amount=v,v=>c.amountTo=v):rangeSingle('Amount',c.amount,0,100,1,v=>v+' %',v=>c.amount=v));
+    // No native Dry/Wet on Erosion, and no rack Dry/Wet wrapper implemented — no control
+    // shown, nothing to apply.
+    return w;
+  }
+  function renderPfBody(c,sw){
+    const w=el('div','',{cssText:'display:flex;flex-direction:column;gap:10px'});
+    w.appendChild(typeGroup('Type',[['phaser','Phaser'],['flanger','Flanger'],['doubler','Doubler']],c.typeSel,v=>{c.typeSel=v;renderB();}));
+    w.appendChild(rateGroup('Rate (Sync)',LONG_RATES,c,false,v=>c.rate=v,null));
+    w.appendChild(sw?rangeSweep('Amount',c.amount,c.amountTo,0,100,1,v=>v+' %',v=>c.amount=v,v=>c.amountTo=v):rangeSingle('Amount',c.amount,0,100,1,v=>v+' %',v=>c.amount=v));
+    if(c.typeSel==='phaser'){
+      w.appendChild(rangeSingle('Notches',c.notches,1,42,1,v=>v+'',v=>c.notches=v));
+      w.appendChild(rangeSingleLog('Center',c.center,pfToPos,posToPf,v=>fmtHz(v),v=>c.center=v));
+      w.appendChild(sw?rangeSweep('Spread',c.spread,c.spreadTo,0,100,1,v=>v+' %',v=>c.spread=v,v=>c.spreadTo=v):rangeSingle('Spread',c.spread,0,100,1,v=>v+' %',v=>c.spread=v));
+    }
+    if(c.typeSel==='flanger') w.appendChild(rangeSingle('Time',c.timeFlanger,0.1,20,0.1,v=>v.toFixed(1)+' ms',v=>c.timeFlanger=v));
+    if(c.typeSel==='doubler') w.appendChild(rangeSingle('Time',c.timeDoubler,20,150,1,v=>v+' ms',v=>c.timeDoubler=v));
+    w.appendChild(dryWetCtrl(c,sw));
+    return w;
+  }
+  // EQ Eight: almost all parameters come in exclusively via "Insert captured chain" —
+  // Scale is its only adjustable control (no native Dry/Wet, confirmed in Live). Shown as
+  // a percentage (-200%..200%); the raw device parameter itself stays -2..2, only the
+  // slider's display/input is scaled by 100 — capture/apply/preset data are unaffected.
+  function renderEq8Body(c,sw){
+    const w=el('div','',{cssText:'display:flex;flex-direction:column;gap:10px'});
+    w.appendChild(sw
+      ? rangeSweep('Scale',c.scale*100,c.scaleTo*100,-200,200,1,v=>v+'%',v=>c.scale=v/100,v=>c.scaleTo=v/100)
+      : rangeSingle('Scale',c.scale*100,-200,200,1,v=>v+'%',v=>c.scale=v/100));
+    return w;
+  }
+  // Vocoder: everything comes in via "Insert captured chain" — only Dry/Wet is adjustable.
+  function renderVocoderBody(c,sw){
+    const w=el('div','',{cssText:'display:flex;flex-direction:column;gap:10px'});
+    w.appendChild(dryWetCtrl(c,sw));
+    return w;
+  }
+  function renderSaturatorBody(c,sw){
+    const w=el('div','',{cssText:'display:flex;flex-direction:column;gap:10px'});
+    const tg=document.createElement('div');tg.className='pgroup';tg.appendChild(pLabel('Type'));tg.appendChild(mkSelect(SATURATOR_TYPES,c.typeSel,v=>c.typeSel=v));w.appendChild(tg);
+    w.appendChild(sw?rangeSweep('Drive',c.amount,c.amountTo,0,100,1,v=>v+' %',v=>c.amount=v,v=>c.amountTo=v):rangeSingle('Drive',c.amount,0,100,1,v=>v+' %',v=>c.amount=v));
+    w.appendChild(dryWetCtrl(c,sw));
+    return w;
+  }
+
+  function typeGroup(label,options,current,onPick){
+    const g=document.createElement('div');g.className='pgroup';
+    g.appendChild(pLabel(label));
+    g.appendChild(typeSeg(options,current,onPick));
+    return g;
+  }
+
+  // ── Hilfselement ─────────────────────────────────────────────────────────
+  function el(tag,cls,style){
+    const e=document.createElement(tag);
+    if(cls)e.className=cls;
+    if(style)Object.assign(e.style,style);
+    return e;
+  }
+
+  // Generic drag-and-drop reorder for a list of rows, with a drop-position indicator (a thin
+  // accent line on whichever edge of the hovered row the dragged item would land on) — used by
+  // both the effect-tile list and the library list. `state` is a small shared box ({current})
+  // holding the currently-dragged key across the handlers of one render pass. `onDrop(fromKey,
+  // toKey,after)` performs the actual array move once a valid drop happens.
+  function wireDragReorder(row,handle,key,state,onDrop){
+    row.ondragover=e=>{
+      e.preventDefault();
+      if(!state.current||state.current===key)return;
+      const r=row.getBoundingClientRect();
+      const after=(e.clientY-r.top)>r.height/2;
+      row.classList.remove('drop-before','drop-after');
+      row.classList.add(after?'drop-after':'drop-before');
+    };
+    row.ondragleave=()=>row.classList.remove('drop-before','drop-after');
+    row.ondrop=e=>{
+      e.preventDefault();
+      const after=row.classList.contains('drop-after');
+      row.classList.remove('drop-before','drop-after');
+      if(!state.current||state.current===key)return;
+      onDrop(state.current,key,after);
+    };
+    handle.setAttribute('draggable','true');
+    handle.ondragstart=e=>{state.current=key;row.classList.add('dragging');e.dataTransfer.effectAllowed='move';};
+    handle.ondragend=()=>{
+      state.current=null;row.classList.remove('dragging');
+      document.querySelectorAll('.drop-before,.drop-after').forEach(x=>x.classList.remove('drop-before','drop-after'));
+    };
+  }
+
+  // ── FX-Liste ──────────────────────────────────────────────────────────────
+  function renderFxList(){
+    const wrap=el('div','fxlist');
+    const dragState={current:null};
+    const sw=cfg.sweepOn;
+
+    cfg.order.forEach(instanceId=>{
+      const type=typeOf(instanceId);
+      const cat=CATALOG.find(x=>x.key===type);if(!cat)return;
+      const c=cfg.effects[instanceId];if(!c)return;
+      const isCollapsed=collapsed.has(instanceId);
+      const card=el('div','fxcard'+(c.on?'':' disabled'));
+      const hd=el('div','fxhd');
+      const grip=el('span','fxgrip');grip.textContent='⠿';grip.title='Drag to reorder';
+      wireDragReorder(card,grip,instanceId,dragState,(fromKey,toKey,after)=>{
+        const fi=cfg.order.indexOf(fromKey);if(fi<0)return;
+        cfg.order.splice(fi,1);
+        let ti=cfg.order.indexOf(toKey);if(ti<0){renderB();return;}
+        if(after)ti+=1;
+        cfg.order.splice(ti,0,fromKey);
+        renderB();
+      });
+      // Collapse chevron — the only fold/arrow glyph in this row (expand/collapse the body).
+      const chev=el('span','fxchev');chev.textContent=isCollapsed?'▸':'▾';chev.title=isCollapsed?'Expand':'Collapse';
+      chev.onclick=()=>{isCollapsed?collapsed.delete(instanceId):collapsed.add(instanceId);renderB();};
+      // Title: plain label — effects only come from an inserted captured chain now, no
+      // manual per-effect swap anymore (HANDOVER.md §9).
+      const nm=el('span','fxname');
+      nm.appendChild(document.createTextNode(cat.label));
+      const sw2=el('span','switch'+(c.on?' on':''));sw2.onclick=()=>{c.on=!c.on;renderB();};
+      const rm=el('span','fxrm');rm.textContent='×';rm.title='Remove effect';
+      rm.onclick=()=>{cfg.order.splice(cfg.order.indexOf(instanceId),1);delete cfg.effects[instanceId];collapsed.delete(instanceId);renderB();};
+      hd.appendChild(grip);hd.appendChild(chev);hd.appendChild(nm);hd.appendChild(sw2);hd.appendChild(rm);
+      card.appendChild(hd);
+
+      if(c.on && !isCollapsed){
+        const body=el('div','fxbody');
+        if(type==='filter')        body.appendChild(renderFilterBody(c,sw));
+        else if(type==='delay')    body.appendChild(renderDelayBody(c,sw));
+        else if(type==='reverb')   body.appendChild(renderReverbBody(c,sw));
+        else if(type==='autopan')  body.appendChild(renderAutoPanBody(c,sw));
+        else if(type==='chorus')   body.appendChild(renderChorusBody(c,sw));
+        else if(type==='echo')     body.appendChild(renderEchoBody(c,sw));
+        else if(type==='erosion')  body.appendChild(renderErosionBody(c,sw));
+        else if(type==='phaserflanger') body.appendChild(renderPfBody(c,sw));
+        else if(type==='eq8')      body.appendChild(renderEq8Body(c,sw));
+        else if(type==='vocoder')  body.appendChild(renderVocoderBody(c,sw));
+        else if(type==='saturator')body.appendChild(renderSaturatorBody(c,sw));
+        card.appendChild(body);
+      }
+      wrap.appendChild(card);
+    });
+
+    // Effects come exclusively from a captured effect chain (HANDOVER.md §9) — no
+    // manual "+ Add effect"/dropdown anymore. Inserting multiple times appends further.
+    const insRow=el('div','addeffrow',{flexDirection:'column',alignItems:'flex-start',gap:'6px'});
+    const insBtn=document.createElement('button');
+    insBtn.textContent=CAPTURED_CHAIN?'⬇ Insert captured chain':'⬇ Insert captured chain (none captured yet)';
+    insBtn.disabled=!CAPTURED_CHAIN;
+    insBtn.onclick=()=>{
+      if(!CAPTURED_CHAIN)return;
+      CAPTURED_CHAIN.chain.forEach(({type,params})=>{
+        const nid=newId(type);
+        cfg.order.push(nid);
+        cfg.effects[nid]=Object.assign(freshParams(type),JSON.parse(JSON.stringify(params)));
+      });
+      renderB();
+      if(CAPTURED_CHAIN.skipped&&CAPTURED_CHAIN.skipped.length){
+        alert('Skipped '+CAPTURED_CHAIN.skipped.length+' unrecognized device(s): '+CAPTURED_CHAIN.skipped.join(', '));
+      }
+    };
+    insRow.appendChild(insBtn);
+    const insNote=el('div','note',{fontSize:'12px'});
+    insNote.textContent=CAPTURED_CHAIN
+      ? 'Effects from the track last captured via "Capture effect chain"'
+      : 'Right-click a track with the desired devices → "Capture effect chain", then reopen this dialog.';
+    insRow.appendChild(insNote);
+    wrap.appendChild(insRow);
+    return wrap;
+  }
+
+  // ── Seite B — Transition bearbeiten ──────────────────────────────────────
+  function renderB(){
+    if(!cfg)cfg=freshCfg();
+    if(cfg.silenceBars===undefined)cfg.silenceBars=0;
+    // Fill in missing parameters (e.g. from older presets) with defaults, keep existing ones.
+    cfg.order.forEach(id=>{cfg.effects[id]=Object.assign(freshParams(typeOf(id)),cfg.effects[id]||{});});
+    clampCfgToSelection(cfg); // silent on every render — see applyPreset/switchLibrary for the notified variant
+    const hasFxNow=cfg.order.some(id=>cfg.effects[id]&&cfg.effects[id].on);
+    const bdy=document.getElementById('bdy');bdy.innerHTML='';
+
+    // Clip info + track assignment in one bar
+    const info=el('div','clipinfo');
+    const clipLen=el('span');
+    if(hasFxNow && cfg.silenceBars>0){
+      const eff=effLenFor(true,cfg);
+      clipLen.innerHTML='Selection: <b>'+ANCHOR_CLIP_BARS+' bars</b> · Effect '+eff+' + Silence '+cfg.silenceBars+' bar(s)';
+    } else {
+      clipLen.innerHTML='Selection length: <b>'+ANCHOR_CLIP_BARS+' bars</b>';
+    }
+    clipLen.title='The effect length matches the length of your time selection in Ableton — draw the selection over the desired transition range before right-clicking.';
+    info.appendChild(clipLen);
+    const sep=el('span','clipinfo-sep');sep.textContent='|';info.appendChild(sep);
+    const taWrap=el('span','',{display:'flex',alignItems:'center',gap:'6px',flexWrap:'wrap',flex:'1'});
+    const taLbl=el('span','note');taLbl.textContent='Tracks:';taWrap.appendChild(taLbl);
+    // Defensive: filter out ids that no longer resolve in byId (e.g. a stale reference to a
+    // since-removed/renamed track from an older session draft) instead of crashing renderB()
+    // mid-render, which would otherwise leave the dialog body blank.
+    const assigned=[...currentAssignedIds()].filter(id=>byId[id]);
+    if(assigned.length){assigned.forEach(id=>{const p=el('span','tpill');p.appendChild(swatch(byId[id].color));p.appendChild(document.createTextNode(byId[id].name));taWrap.appendChild(p);});}
+    else{const n=el('span','note');n.textContent='(none)';taWrap.appendChild(n);}
+    const taBtn=document.createElement('button');taBtn.textContent='Assign';taBtn.style.height='24px';taBtn.style.padding='0 9px';taBtn.style.fontSize='12px';
+    taBtn.onclick=()=>{assignOneIndex=fxLibEditIndex===null?'PENDING':fxLibEditIndex;window._selIds=new Set(currentAssignedIds());assignOneReturnPhase='EDIT';phase='ASSIGN_ONE';render();};
+    taWrap.appendChild(taBtn);info.appendChild(taWrap);
+    bdy.appendChild(info);
+
+    // Preset
+    const prow=el('div','',{display:'flex',gap:'8px',alignItems:'center',marginBottom:'10px'});
+    const plbl=el('label','f');plbl.style.margin='0';plbl.textContent='Preset';
+    const psel=document.createElement('select');psel.style.flex='1';
+    Object.keys(BUILTIN_PRESETS).forEach(k=>{const o=document.createElement('option');o.value='b:'+k;o.textContent=PRESET_LABELS[k];psel.appendChild(o);});
+    if(userPresets.length){const og=document.createElement('optgroup');og.label='Custom';userPresets.forEach(up=>{const o=document.createElement('option');o.value='u:'+up.name;o.textContent=up.name;og.appendChild(o);});psel.appendChild(og);}
+    if([...psel.options].some(o=>o.value===cfg.activePreset))psel.value=cfg.activePreset;
+    else{cfg.activePreset='b:eigene';psel.value='b:eigene';}
+    psel.onchange=()=>{
+      cfg.activePreset=psel.value;
+      if(psel.value==='b:eigene'){psel.value='b:eigene';}
+      else if(psel.value.startsWith('b:')){const key=psel.value.slice(2);const p=BUILTIN_PRESETS[key];if(p)applyPreset(p,PRESET_LABELS[key]);}
+      else{const up=userPresets.find(p=>p.name===psel.value.slice(2));if(up)applyPreset(up.cfg,up.name);}
+      cfg.activePreset=psel.value;renderB();
+    };
+    const pdel=document.createElement('button');pdel.textContent='🗑';pdel.title='Delete custom preset';pdel.disabled=!psel.value.startsWith('u:');
+    pdel.onclick=()=>{if(!psel.value.startsWith('u:'))return;userPresets=userPresets.filter(p=>p.name!==psel.value.slice(2));cfg.activePreset='b:eigene';renderB();};
+    const psave=document.createElement('button');psave.textContent='Save';
+    psave.onclick=()=>{
+      const prefill=(cfg.title&&cfg.title.trim())?cfg.title.trim():(psel.value.startsWith('u:')?psel.value.slice(2):'');
+      openSaveModal('preset',prefill);
+    };
+    prow.appendChild(plbl);prow.appendChild(psel);prow.appendChild(pdel);prow.appendChild(psave);bdy.appendChild(prow);
+
+    // Titel
+    const tf=el('div','',{marginBottom:'14px'});
+    const tl=el('label','f');tl.textContent='Title';tf.appendChild(tl);
+    const ti=document.createElement('input');ti.type='text';ti.style.width='100%';ti.placeholder='e.g. Filter sweep verse → drop';ti.value=cfg.title;
+    ti.oninput=()=>cfg.title=ti.value;tf.appendChild(ti);bdy.appendChild(tf);
+
+    // Color — applied to the generated clips (choice of 8 standard colors).
+    if(!cfg.color) cfg.color = nextColor();
+    const cf=el('div','',{marginBottom:'14px'});
+    const cl=el('label','f');cl.textContent='Color (for the generated clips)';cf.appendChild(cl);
+    const crow=el('div','colorrow');
+    TRANSITION_COLORS.forEach(col=>{
+      const b=document.createElement('button');b.className='swatchbtn'+(col.toLowerCase()===(cfg.color||'').toLowerCase()?' sel':'');
+      b.style.background=col;b.title=col;b.onclick=()=>{cfg.color=col;renderB();};
+      crow.appendChild(b);
+    });
+    cf.appendChild(crow);bdy.appendChild(cf);
+
+    const hr=el('hr','div');bdy.appendChild(hr);
+
+    // Effect length: no field of its own anymore — it's the clip length (minus the active
+    // silence duration, if any, see below). The user determines it by trimming the clip in Ableton.
+    const effLenNow=effLenFor(hasFxNow,cfg);
+
+    // Step sweep — rules unchanged, now based on the derived effect length. Always visible,
+    // but greyed out/disabled without an active effect or when the length is too short; the
+    // extra text "(not possible at this length)" only appears when the length (with an active
+    // effect) is actually the reason, not when simply no effect has been loaded yet.
+    const stepOpts=stepOptionsForLength(effLenNow);
+    const swWrap=el('div','stepsRow');
+    const noSweep=stepOpts.length===0;
+    const swLbl=el('label','chk');
+    if(noSweep) swLbl.style.opacity='0.5';
+    const swCb=document.createElement('input');swCb.type='checkbox';swCb.checked=cfg.sweepOn;swCb.disabled=noSweep;
+    swCb.onchange=()=>{cfg.sweepOn=swCb.checked;renderB();};
+    const swText=' Step sweep'+(noSweep&&hasFxNow?' (not possible at this length)':'');
+    swLbl.appendChild(swCb);swLbl.appendChild(document.createTextNode(swText));
+    swWrap.appendChild(swLbl);
+    if(cfg.sweepOn){const ss=el('div','seg');stepOpts.forEach(s=>{const o=el('span','opt'+(s===cfg.sweepSteps?' on':''));o.textContent=s+'×';o.onclick=()=>{cfg.sweepSteps=s;renderB();};ss.appendChild(o);});swWrap.appendChild(ss);}
+    bdy.appendChild(swWrap);
+
+    bdy.appendChild(renderFxList());
+
+    // Silence duration — tiles (Segmented Control, same visual pattern as Filter Slope)
+    // instead of a slider. 0 = no silence subtracted (default) — no separate enable switch
+    // needed anymore, since 0 already means "off". Max depends on whether an effect is
+    // active: with an effect, at least FX_LEN_MIN stays reserved for it; without one (pure
+    // silence), it may take up the whole selection. Options above the current max render
+    // disabled instead of being hidden.
+    const silMax = hasFxNow ? Math.max(0, ANCHOR_CLIP_BARS-FX_LEN_MIN) : ANCHOR_CLIP_BARS;
+    const silWrap=el('div','',{marginBottom:'14px'});
+    const silLbl=el('label','f');silLbl.textContent='Silence duration';silWrap.appendChild(silLbl);
+    const silSeg=el('div','seg fxtypeseg');
+    SILENCE_OPTIONS.forEach(v=>{
+      const disabled=v>silMax;
+      const o=el('span','opt'+(v===cfg.silenceBars?' on':'')+(disabled?' dis':''));
+      o.textContent=v===0?'Off':String(v);
+      if(!disabled) o.onclick=()=>{cfg.silenceBars=v;renderB();};
+      silSeg.appendChild(o);
+    });
+    silWrap.appendChild(silSeg);
+    if(cfg.silenceBars>0){
+      const sn=el('div','note',{fontSize:'12px',marginTop:'6px'});
+      sn.textContent='Sits at the end of the selection — an active effect moves in front of it and its range shortens accordingly.';
+      silWrap.appendChild(sn);
+    }
+    bdy.appendChild(silWrap);
+
+    // Also on the original track
+    const origLbl=el('label','chk');origLbl.style.marginTop='4px';
+    const origCb=document.createElement('input');origCb.type='checkbox';origCb.checked=cfg.applyToOriginal;
+    origCb.onchange=()=>cfg.applyToOriginal=origCb.checked;
+    origLbl.appendChild(origCb);origLbl.appendChild(document.createTextNode(' Also load effects on the original track'));
+    bdy.appendChild(origLbl);
+
+    renderFooterB();
+  }
+
+  function discardEdit(){
+    // Nothing is ever written into defs/matrixAssign until an explicit "Save to library"
+    // click (see renderFooterB) — so discarding is just resetting local state, no
+    // splice/index-shifting needed anymore regardless of whether this was a new or an
+    // already-saved transition being edited.
+    fxLibEditIndex=null;cfg=null;pendingAssignedIds=new Set();pendingIsCommitted=false;phase='LIST';render();
+  }
+  function renderFooterB(){
+    const r=document.getElementById('ftRight');r.innerHTML='';
+    document.getElementById('ind').textContent='Edit transition';
+    const back=document.createElement('button');back.textContent='Go to Library';
+    back.onclick=()=>discardEdit();
+
+    const saveLib=document.createElement('button');saveLib.textContent='Save to library';
+    saveLib.onclick=()=>{
+      if(fxLibEditIndex!==null){
+        // Already a library entry — update it in place, its existing track assignment
+        // (if any) is left untouched.
+        defs[fxLibEditIndex]=JSON.parse(JSON.stringify(cfg));
+      } else {
+        // New entry — added as a reusable template WITHOUT the pending track assignment
+        // (deliberate: saving to the library and applying now are separate actions; assign
+        // tracks to a saved entry later via "Assign"/the matrix view). pendingIsCommitted
+        // stays false, so the editor keeps showing pendingAssignedIds unchanged.
+        fxLibEditIndex=defs.push(JSON.parse(JSON.stringify(cfg)))-1;
+      }
+      // 2026-07-06: stays in the editor (no more phase='LIST' jump) — repeated clicks just
+      // update the same entry in place (fxLibEditIndex is now set after the first save).
+      renderB();
+    };
+
+    // Apply directly: run just this transition against its currently assigned tracks (pending
+    // or already-saved) and close, without requiring — or implying — a library save at all.
+    const assignedNow=[...currentAssignedIds()].filter(id=>byId[id]);
+    const apply=document.createElement('button');apply.className='primary';apply.textContent='Apply';
+    apply.disabled=assignedNow.length===0;
+    apply.title=assignedNow.length===0?'Assign at least one track first':'';
+    apply.onclick=()=>{
+      const plan=[{cfg:JSON.parse(JSON.stringify(cfg)),trackIds:assignedNow}];
+      sendResult({cancelled:false,plan,draft:buildDraft()});
+    };
+
+    r.appendChild(back);r.appendChild(saveLib);r.appendChild(apply);
+  }
+
+  // ── Library list ──────────────────────────────────────────────────────────
+  function renderFxLibList(){
+    collapsed.clear();   // don't carry the collapse state over into the list
+    const bdy=document.getElementById('bdy');bdy.innerHTML='';
+
+    // Library preset bar
+    const lpW=el('div','',{background:'#f4f4f2',border:'1px solid var(--line)',borderRadius:'6px',padding:'10px 12px',marginBottom:'14px'});
+    const lpR=el('div','',{display:'flex',gap:'8px',alignItems:'center'});
+    const lpL=el('label','f');lpL.style.cssText='margin:0;white-space:nowrap';lpL.textContent='Library';
+    const lpSel=document.createElement('select');lpSel.style.flex='1';
+    const eO=document.createElement('option');eO.value='eigene';eO.textContent='Default';lpSel.appendChild(eO);
+    if(libPresets.length){const og=document.createElement('optgroup');og.label='Saved libraries';libPresets.forEach(lp=>{const o=document.createElement('option');o.value=lp.name;o.textContent=lp.name;og.appendChild(o);});lpSel.appendChild(og);}
+    if([...lpSel.options].some(o=>o.value===activeLibPreset))lpSel.value=activeLibPreset;
+    lpSel.onchange=()=>{ switchLibrary(lpSel.value); };
+    const lpSave=document.createElement('button');lpSave.textContent='Save';
+    lpSave.onclick=()=>{openSaveModal('library',activeLibPreset!=='eigene'?activeLibPreset:'');};
+    const lpDel=document.createElement('button');lpDel.textContent='🗑';lpDel.title='Delete library';lpDel.disabled=activeLibPreset==='eigene';
+    lpDel.onclick=()=>{libPresets=libPresets.filter(p=>p.name!==activeLibPreset);switchLibrary('eigene');};
+    lpR.appendChild(lpL);lpR.appendChild(lpSel);lpR.appendChild(lpSave);lpR.appendChild(lpDel);lpW.appendChild(lpR);
+    bdy.appendChild(lpW);
+
+    // New transition
+    const newBtn=document.createElement('button');newBtn.textContent='+ New transition';newBtn.style.marginBottom='12px';
+    newBtn.onclick=()=>{cfg=freshCfg();fxLibEditIndex=null;pendingAssignedIds=new Set();pendingIsCommitted=false;phase='EDIT';render();};
+    bdy.appendChild(newBtn);
+
+    if(defs.length===0){
+      const empty=el('div','note',{padding:'12px 0'});empty.textContent='No transition created yet. Click "+ New transition".';bdy.appendChild(empty);
+    } else {
+      const rl=el('div','roundlist');
+      const dragState={current:null};
+      defs.forEach((d,i)=>{
+        if(!d.color) d.color=nextColor();
+        const row=el('div','roundrow');
+        const grip=el('span','fxgrip');grip.textContent='⠿';grip.title='Drag to reorder';grip.style.cssText='cursor:grab;';
+        wireDragReorder(row,grip,d,dragState,(fromD,toD,after)=>{
+          const fi=defs.indexOf(fromD);if(fi<0)return;
+          defs.splice(fi,1);
+          let ti=defs.indexOf(toD);if(ti<0){render();return;}
+          if(after)ti+=1;
+          defs.splice(ti,0,fromD);
+          remapAssignForMove(matrixAssign,fi,ti);
+          render();
+        });
+        const dot=cdot(d.color);
+        const tt=el('span','tt');tt.textContent=defLabel(d,i)+' — '+summarizeCfg(d);tt.title=defLabel(d,i)+' — '+summarizeCfg(d,true);
+        // Truncate long assigned-track lists (many tracks otherwise blow up the row width) —
+        // full list stays available as a tooltip.
+        const aIds=(matrixAssign[i]?[...matrixAssign[i]]:[]).filter(id=>byId[id]);
+        const aAllNames=aIds.map(id=>byId[id].name);
+        const aNames=aAllNames.length>3?aAllNames.slice(0,3).join(', ')+' +'+(aAllNames.length-3)+' more':aAllNames.join(', ');
+        const tr=el('span','tracks');tr.style.color=aNames?'var(--tx2)':'var(--tx3)';tr.textContent=aNames||'(no tracks)';
+        if(aAllNames.length>3)tr.title=aAllNames.join(', ');
+        const aBtn=document.createElement('button');aBtn.textContent='Assign tracks';aBtn.style.cssText='height:26px;padding:0 9px;';
+        aBtn.onclick=()=>{assignOneIndex=i;window._selIds=new Set(matrixAssign[i]||[]);assignOneReturnPhase='LIST';phase='ASSIGN_ONE';render();};
+        const eBtn=document.createElement('button');eBtn.textContent='Edit';eBtn.style.cssText='height:26px;padding:0 9px;';
+        eBtn.onclick=()=>{fxLibEditIndex=i;cfg=JSON.parse(JSON.stringify(defs[i]));pendingIsCommitted=true;phase='EDIT';render();};
+        const dBtn=el('span','',{cursor:'pointer',fontSize:'15px'});dBtn.textContent='🗑';dBtn.title='Delete transition';
+        dBtn.onclick=()=>{defs.splice(i,1);const sh={};Object.keys(matrixAssign).forEach(k=>{const ki=+k;if(ki===i)return;sh[ki>i?ki-1:ki]=matrixAssign[k];});matrixAssign=sh;render();};
+        row.appendChild(grip);row.appendChild(dot);row.appendChild(tt);row.appendChild(tr);row.appendChild(aBtn);row.appendChild(eBtn);row.appendChild(dBtn);
+        rl.appendChild(row);
+      });
+      bdy.appendChild(rl);
+    }
+
+    const r=document.getElementById('ftRight');r.innerHTML='';
+    document.getElementById('ind').textContent='Library';
+    const matBtn=document.createElement('button');matBtn.textContent='Matrix view';matBtn.disabled=defs.length===0;matBtn.onclick=()=>{phase='MATRIX';render();};
+    const applyBtn=document.createElement('button');applyBtn.className='primary';applyBtn.disabled=defs.length===0;applyBtn.textContent='Apply and close';
+    applyBtn.onclick=()=>{
+      // Only apply transitions with at least one assigned track; return the full draft.
+      const plan=defs.map((d,i)=>({cfg:JSON.parse(JSON.stringify(d)),trackIds:[...(matrixAssign[i]||new Set())]})).filter(p=>p.trackIds.length>0);
+      sendResult({ cancelled:false, plan, draft:buildDraft() });
+    };
+    r.appendChild(matBtn);r.appendChild(applyBtn);
+  }
+
+  // ── Assign tracks (single transition) ────────────────────────────────────
+  function renderAssignOne(){
+    // 'PENDING' = the transition currently being edited hasn't been saved to the library yet
+    // (see currentAssignedIds) — use the live cfg for its label instead of a defs[] lookup.
+    const isPending=assignOneIndex==='PENDING';
+    const d=isPending?cfg:defs[assignOneIndex];
+    if(!window._selIds)window._selIds=new Set();
+    const selIds=window._selIds;
+    const bdy=document.getElementById('bdy');
+    // Remember the scroll position: a group toggle rebuilds the list completely (a new
+    // .listbox element) — without this the view would unintentionally jump back to the top.
+    const prevListbox=bdy.querySelector('.listbox');
+    const prevListScroll=prevListbox?prevListbox.scrollTop:0;
+    const prevBdyScroll=bdy.scrollTop;
+    bdy.innerHTML='';
+    const ban=el('div','ban');ban.textContent='Choose tracks for "'+defLabel(d,isPending?0:assignOneIndex)+'".';bdy.appendChild(ban);
+    const lbl=el('label','f');lbl.textContent='Tracks with content in range';bdy.appendChild(lbl);
+    const list=el('div','listbox');
+    // Hide empty tracks — only tracks with a clip in the range (group only if a child has content).
+    const visible=TRACKS.filter(t=>t.isGroup?descLeaves(t.id).some(de=>de.hasContent):t.hasContent);
+    visible.forEach(t=>{
+      const taken=!t.isGroup&&Object.keys(matrixAssign).some(k=>+k!==assignOneIndex&&matrixAssign[k]&&matrixAssign[k].has(t.id));
+      const row=el('label','exrow'+(t.isGroup?' grp':'')+(t.group!=null?' child':'')+((!t.isGroup&&!t.hasContent)?' empty':'')+(taken?' assigned':''));
+      const cb=document.createElement('input');cb.type='checkbox';
+      if(t.isGroup){const desc=descLeaves(t.id).filter(de=>de.hasContent&&!Object.keys(matrixAssign).some(k=>+k!==assignOneIndex&&matrixAssign[k]&&matrixAssign[k].has(de.id)));cb.disabled=desc.length===0;cb.checked=desc.length>0&&desc.every(de=>selIds.has(de.id));cb.onchange=()=>{desc.forEach(de=>cb.checked?selIds.add(de.id):selIds.delete(de.id));renderAssignOne();};}
+      else if(!t.hasContent||taken){cb.disabled=true;}
+      else{cb.checked=selIds.has(t.id);cb.onchange=()=>cb.checked?selIds.add(t.id):selIds.delete(t.id);}
+      row.appendChild(cb);
+      if(t.isGroup){const gi=el('span','grpic');gi.textContent='▸';row.appendChild(gi);}else row.appendChild(swatch(t.color));
+      const sp=document.createElement('span');sp.textContent=t.name+(t.isGroup?' (Group)':(!t.hasContent?' (empty)':taken?' (assigned to another transition)':''));
+      row.appendChild(sp);list.appendChild(row);
+    });
+    bdy.appendChild(list);
+    list.scrollTop=prevListScroll;
+    bdy.scrollTop=prevBdyScroll;
+    const r=document.getElementById('ftRight');r.innerHTML='';
+    document.getElementById('ind').textContent='Assign tracks';
+    const back=document.createElement('button');back.textContent='Back';
+    back.onclick=()=>{window._selIds=new Set();assignOneIndex=null;phase=assignOneReturnPhase;render();};
+    const save=document.createElement('button');save.className='primary';save.textContent='Save assignment';
+    save.onclick=()=>{
+      if(isPending) pendingAssignedIds=new Set(selIds);
+      else { matrixAssign[assignOneIndex]=new Set(selIds); pendingIsCommitted=true; }
+      window._selIds=new Set();
+      if(assignOneReturnPhase==='EDIT'){phase='EDIT';render();}else{assignOneIndex=null;phase='LIST';render();}
+    };
+    r.appendChild(back);r.appendChild(save);
+  }
+
+  // ── Matrix-Ansicht ────────────────────────────────────────────────────────
+  function renderFxLibMatrix(){
+    const bdy=document.getElementById('bdy');bdy.innerHTML='';
+    const ban=el('div','ban');ban.textContent='Check at most one transition per track.';bdy.appendChild(ban);
+    const leaves=TRACKS.filter(t=>!t.isGroup&&t.hasContent);
+    const wrap=el('div','',{overflow:'auto'});
+    const tbl=document.createElement('table');tbl.className='matrix';
+    const thead=document.createElement('tr');thead.appendChild(document.createElement('th'));
+    // Column header title constrained to a max width with ellipsis + tooltip so long titles
+    // (or many columns) don't blow up the table (declutter fix).
+    defs.forEach((d,i)=>{const th=document.createElement('th');const hwrap=el('span','',{display:'inline-flex',alignItems:'center',gap:'5px',maxWidth:'160px'});hwrap.title=defLabel(d,i);hwrap.appendChild(cdot(d.color));const lbl=el('span','',{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'});lbl.textContent=defLabel(d,i);hwrap.appendChild(lbl);th.appendChild(hwrap);thead.appendChild(th);});
+    tbl.appendChild(thead);
+    leaves.forEach(t=>{
+      const row=document.createElement('tr');
+      const nameTd=el('td','nm');nameTd.appendChild(swatch(t.color));nameTd.appendChild(Object.assign(document.createElement('span'),{textContent:t.name}));row.appendChild(nameTd);
+      defs.forEach((_,i)=>{
+        const td=document.createElement('td');const cb=document.createElement('input');cb.type='checkbox';
+        cb.checked=!!(matrixAssign[i]&&matrixAssign[i].has(t.id));
+        cb.onchange=()=>{if(cb.checked){Object.keys(matrixAssign).forEach(k=>matrixAssign[k]&&matrixAssign[k].delete(t.id));if(!matrixAssign[i])matrixAssign[i]=new Set();matrixAssign[i].add(t.id);}else if(matrixAssign[i])matrixAssign[i].delete(t.id);renderFxLibMatrix();};
+        td.appendChild(cb);row.appendChild(td);
+      });
+      tbl.appendChild(row);
+    });
+    wrap.appendChild(tbl);bdy.appendChild(wrap);
+    const r=document.getElementById('ftRight');r.innerHTML='';
+    document.getElementById('ind').textContent='Matrix assignment';
+    const back=document.createElement('button');back.textContent='Back';back.onclick=()=>{phase='LIST';render();};
+    r.appendChild(back);
+  }
+
+  // ── Session draft (host persistence) ─────────────────────────────────────
+  // Holds the state of the "Default" library (+ presets) for the session — even
+  // without saving it as a preset, even after canceling, even while a preset is
+  // open. The draft isn't saved locally, but handed back to the host on close;
+  // the host holds it in-memory for the Live session and injects it as
+  // DATA.draft on the next open.
+  function buildDraft(){
+    const dDefs = activeLibPreset==='eigene' ? defs : defaultDefs;
+    const dMa   = activeLibPreset==='eigene' ? matrixAssign : defaultMatrixAssign;
+    const ma={}; Object.keys(dMa).forEach(k=>{ if(dMa[k]&&dMa[k].size) ma[k]=[...dMa[k]]; });
+    return { defaultDefs:dDefs, defaultMatrixAssign:ma, userPresets, libPresets };
+  }
+  function restoreSession(){
+    const s=DATA.draft; if(!s) return;
+    try{
+      if(Array.isArray(s.defaultDefs)) defaultDefs=s.defaultDefs;
+      if(s.defaultMatrixAssign){ defaultMatrixAssign={}; Object.keys(s.defaultMatrixAssign).forEach(k=>defaultMatrixAssign[k]=new Set(s.defaultMatrixAssign[k])); }
+      if(Array.isArray(s.userPresets)) userPresets=s.userPresets;
+      if(Array.isArray(s.libPresets)) libPresets=s.libPresets;
+      // On (re)opening, always start on "Default" with the remembered state.
+      activeLibPreset='eigene'; defs=defaultDefs; matrixAssign=defaultMatrixAssign;
+      // The restored Default library may hold entries saved against a longer selection than
+      // the current one (2026-07-06, found via user testing: switchLibrary() already
+      // validated named libraries on switch, but a fresh reopen restores Default without ever
+      // calling it) — validate right away, same as switchLibrary() does.
+      validateDefsAgainstSelection(defaultDefs);
+    }catch(e){/* a broken draft is ignored */}
+  }
+
+  // ── Router ────────────────────────────────────────────────────────────────
+  function render(){
+    if(phase==='LIST')           renderFxLibList();
+    else if(phase==='EDIT')      renderB();
+    else if(phase==='ASSIGN_ONE')renderAssignOne();
+    else                          renderFxLibMatrix();
+  }
+
+  // ── Preset/library save popup (same visual style as am-drum-fill-generator's
+  // "Save Preset" modal) — replaces the old inline expanding save-row for both flows.
+  function openSaveModal(target,prefill){
+    saveModalTarget=target;
+    document.getElementById('save-modal-title').textContent=target==='library'?'Save Library':'Save Preset';
+    const input=document.getElementById('save-modal-input');
+    input.value=prefill||'';
+    document.getElementById('save-modal-error').textContent='';
+    document.getElementById('save-modal').style.display='flex';
+    input.focus();input.select();
+  }
+  function closeSaveModal(){
+    document.getElementById('save-modal').style.display='none';
+    saveModalTarget=null;
+  }
+  function doSaveModal(){
+    const name=document.getElementById('save-modal-input').value.trim();
+    if(!name){document.getElementById('save-modal-error').textContent='Enter a name.';return;}
+    if(saveModalTarget==='preset'){
+      userPresets=userPresets.filter(p=>p.name!==name);
+      userPresets.push({name,cfg:JSON.parse(JSON.stringify(cfg))});
+      cfg.activePreset='u:'+name;
+      closeSaveModal();renderB();
+    } else if(saveModalTarget==='library'){
+      libPresets=libPresets.filter(p=>p.name!==name);
+      libPresets.push({name,defs:JSON.parse(JSON.stringify(defs))});
+      activeLibPreset=name;
+      closeSaveModal();render();
+    }
+  }
+  document.getElementById('save-modal-cancel').onclick=()=>closeSaveModal();
+  document.getElementById('save-modal-save').onclick=()=>doSaveModal();
+  document.getElementById('save-modal-input').addEventListener('keydown',e=>{
+    if(e.key==='Enter')doSaveModal();
+    else if(e.key==='Escape'){e.stopPropagation();closeSaveModal();}
+  });
+
+  document.getElementById('cancel').onclick=()=>sendResult({ cancelled:true, plan:[], draft:buildDraft() });
+  document.getElementById('xtop').onclick=()=>document.getElementById('cancel').onclick();
+  document.addEventListener('keydown',e=>{
+    if(e.key!=='Escape')return;
+    if(document.getElementById('save-modal').style.display==='flex'){closeSaveModal();return;}
+    document.getElementById('cancel').onclick();
+  });
+
+  // Every open comes from a fresh time selection → immediately create a new
+  // transition with the captured tracks and jump straight into its editor
+  // ("assign directly, matrix only for later adjustments"). Older library entries
+  // (from restoreSession) remain unchanged and are still reachable via "Back".
+  function autoCreateFromSelection(){
+    if(!SELECTED_TRACK_IDS || !SELECTED_TRACK_IDS.length) return false;
+    // Stays purely local (fxLibEditIndex null) until the user explicitly clicks "Save to
+    // library" — no more auto-writing into defaultDefs/defaultMatrixAssign on every single
+    // time selection, which used to accumulate stale library entries from routine quick use
+    // and could double-assign a track across them (no "taken" guard on this auto path).
+    cfg = freshCfg();
+    fxLibEditIndex = null;
+    pendingAssignedIds = new Set(SELECTED_TRACK_IDS);
+    pendingIsCommitted = false;
+    activeLibPreset = 'eigene'; defs = defaultDefs; matrixAssign = defaultMatrixAssign;
+    phase = 'EDIT';
+    return true;
+  }
+
+  restoreSession();
+  autoCreateFromSelection();
+  render();
+})();
+</script>
+</body>
+</html>

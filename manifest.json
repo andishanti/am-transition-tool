@@ -1,0 +1,7 @@
+{
+    "name": "AM Transition Tool",
+    "author": "Andreas Mang",
+    "entry": "dist/extension.js",
+    "version": "1.0.0",
+    "minimumApiVersion": "1.0.0"
+}
