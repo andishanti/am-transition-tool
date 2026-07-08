@@ -77,9 +77,11 @@ Everything else about the captured devices comes along unchanged. A
 transition can also be pure silence instead of (or in addition to) an
 effect — useful for a plain break at the end of a loop.
 
-![Edit transition](screenshots/01-edit-transition.png)
+<br>
+
 ![Effect chain editor](screenshots/02-effect-chain.png)
-![Silence option](screenshots/03-silence-option.png)
+
+<br>
 
 **3. Save it for quick access later.** If there's a chance you'll want this
 transition again, this is the point to save it as a preset or add it to your
@@ -87,7 +89,11 @@ library — before clicking Apply. That way it's one click away next time,
 instead of inserting the captured effect chain and setting up the silence
 duration from scratch.
 
+<br>
+
 ![Library](screenshots/04-library.png)
+
+<br>
 
 **4. Apply.** The extension duplicates every selected track, clears the
 original's content in that time range (so it plays silence there), trims the
@@ -100,6 +106,8 @@ except for the section it now hands off to.
 currently loaded library against every track at once, so you can assign
 several transitions to different tracks in one place instead of hunting
 through the Arrangement.
+
+<br>
 
 ![Matrix view](screenshots/05-matrix.png)
 
