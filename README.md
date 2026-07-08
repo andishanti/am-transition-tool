@@ -79,7 +79,7 @@ effect — useful for a plain break at the end of a loop.
 
 <br>
 
-![Effect chain editor](screenshots/02-effect-chain.png)
+<img src="screenshots/02-effect-chain.png" alt="Effect chain editor" width="500">
 
 <br>
 
@@ -91,7 +91,7 @@ duration from scratch.
 
 <br>
 
-![Library](screenshots/04-library.png)
+<img src="screenshots/04-library.png" alt="Library" width="500">
 
 <br>
 
@@ -109,7 +109,7 @@ through the Arrangement.
 
 <br>
 
-![Matrix view](screenshots/05-matrix.png)
+<img src="screenshots/05-matrix.png" alt="Matrix view" width="500">
 
 ## Further notes
 
